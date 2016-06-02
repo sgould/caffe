@@ -35,8 +35,12 @@ void EltwiseLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   }
   top[0]->ReshapeLike(*bottom[0]);
   // If max operation, we will initialize the vector index part.
-  if (this->layer_param_.eltwise_param().operation() ==
-      EltwiseParameter_EltwiseOp_MAX && top.size() == 1) {
+  // Also for rand operation.
+  if (((this->layer_param_.eltwise_param().operation() ==
+              EltwiseParameter_EltwiseOp_MAX) ||
+          (this->layer_param_.eltwise_param().operation() ==
+              EltwiseParameter_EltwiseOp_RAND))
+      && (top.size() == 1)) {
     max_idx_.Reshape(bottom[0]->shape());
   }
 }
@@ -91,6 +95,21 @@ void EltwiseLayer<Dtype>::Forward_cpu(
       }
     }
     break;
+  case EltwiseParameter_EltwiseOp_RAND:
+    // Initialize randomly
+    mask = max_idx_.mutable_cpu_data();
+    caffe_rng_uniform<int>(count, 0, bottom.size(), mask);
+    caffe_set(count, Dtype(-FLT_MAX), top_data);
+    // Copy selected
+    for (int blob_idx = 0; blob_idx < bottom.size(); ++blob_idx) {
+        bottom_data_b = bottom[blob_idx]->cpu_data();
+        for (int idx = 0; idx < count; idx++) {
+            if (mask[idx] == blob_idx) {
+                top_data[idx] = bottom_data_b[idx];
+            }
+        }
+    }
+    break;
   default:
     LOG(FATAL) << "Unknown elementwise operation.";
   }
@@ -134,6 +153,7 @@ void EltwiseLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
         }
         break;
       case EltwiseParameter_EltwiseOp_MAX:
+      case EltwiseParameter_EltwiseOp_RAND:
         mask = max_idx_.cpu_data();
         for (int index = 0; index < count; ++index) {
           Dtype gradient = 0;
