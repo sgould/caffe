@@ -401,6 +401,16 @@ void caffe_gpu_rng_uniform<double>(const int n, const double a, const double b,
   }
 }
 
+/*
+template <>
+void caffe_gpu_rng_uniform<int>(const int n, const int a, const int b, int* r) {
+  caffe_gpu_rng_uniform(n, static_cast<const float>(a), static_cast<const float>(b), (float *)r);
+  CUDA_KERNEL_LOOP(index, n) {
+    r[index] = static_cast<int>(((float *)r)[index]);
+  }
+}
+*/
+
 template <>
 void caffe_gpu_rng_gaussian(const int n, const float mu, const float sigma,
                             float* r) {

@@ -62,6 +62,14 @@ void EltwiseLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
           count, top_data, bottom[i]->gpu_data(), i-1, top_data, mask);
     }
     break;
+/*
+  case EltwiseParameter_EltwiseOp_RAND:
+    // Initialize randomly
+    mask = max_idx_.mutable_gpu_data();
+    caffe_gpu_rng_uniform(count, 0, static_cast<int>(bottom.size()), mask);
+    LOG(FATAL) << "TODO";
+    break;
+*/
   default:
     LOG(FATAL) << "Unknown elementwise operation.";
   }
@@ -117,6 +125,7 @@ void EltwiseLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         }
         break;
       case EltwiseParameter_EltwiseOp_MAX:
+//      case EltwiseParameter_EltwiseOp_RAND:
         mask = max_idx_.gpu_data();
         MaxBackward<Dtype>  // NOLINT_NEXT_LINE(whitespace/operators)
             <<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
