@@ -31,11 +31,22 @@ __global__ void MaxForward(const int nthreads, const Dtype* bottom_data_a,
 }
 
 template <typename Dtype>
+__global__ void RandForward(const int nthreads, const Dtype* bottom_data,
+    const int blob_idx, Dtype* top_data, int* mask) {
+  CUDA_KERNEL_LOOP(index, nthreads) {
+    if (mask[index] == blob_idx) {
+      top_data[index] = bottom_data[index];
+    }
+  }
+}
+
+template <typename Dtype>
 void EltwiseLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top) {
   int* mask = NULL;
   const int count = top[0]->count();
   Dtype* top_data = top[0]->mutable_gpu_data();
+
   switch (op_) {
   case EltwiseParameter_EltwiseOp_PROD:
     caffe_gpu_mul(count, bottom[0]->gpu_data(), bottom[1]->gpu_data(),
@@ -62,14 +73,20 @@ void EltwiseLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
           count, top_data, bottom[i]->gpu_data(), i-1, top_data, mask);
     }
     break;
-/*
   case EltwiseParameter_EltwiseOp_RAND:
     // Initialize randomly
     mask = max_idx_.mutable_gpu_data();
     caffe_gpu_rng_uniform(count, 0, static_cast<int>(bottom.size()), mask);
-    LOG(FATAL) << "TODO";
+#if 0
+    // FOR TESTING
+    caffe_gpu_set(count, int(0), mask);
+#endif
+    for (int i = 0; i < bottom.size(); ++i) {
+      // NOLINT_NEXT_LINE(whitespace/operators)
+      RandForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
+          count, bottom[i]->gpu_data(), i, top_data, mask);
+    }
     break;
-*/
   default:
     LOG(FATAL) << "Unknown elementwise operation.";
   }
@@ -125,7 +142,7 @@ void EltwiseLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         }
         break;
       case EltwiseParameter_EltwiseOp_MAX:
-//      case EltwiseParameter_EltwiseOp_RAND:
+      case EltwiseParameter_EltwiseOp_RAND:
         mask = max_idx_.gpu_data();
         MaxBackward<Dtype>  // NOLINT_NEXT_LINE(whitespace/operators)
             <<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(

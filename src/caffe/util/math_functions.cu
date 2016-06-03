@@ -367,6 +367,18 @@ void caffe_gpu_powx<double>(const int N, const double* a,
       N, a, alpha, y);
 }
 
+template <typename Dtype>
+__global__ void int_kernel(const int n, const Dtype* x, int *y) {
+  CUDA_KERNEL_LOOP(index, n) {
+    y[index] = static_cast<int>(x[index]);
+  }
+}
+
+void caffe_gpu_float_to_int(const int N, const float* x, int* y) {
+  // NOLINT_NEXT_LINE(whitespace/operators)
+  int_kernel<float><<<CAFFE_GET_BLOCKS(N), CAFFE_CUDA_NUM_THREADS>>>(N, x, y);
+}
+
 DEFINE_AND_INSTANTIATE_GPU_UNARY_FUNC(sign, y[index] = (Dtype(0) < x[index])
                                       - (x[index] < Dtype(0)));
 DEFINE_AND_INSTANTIATE_GPU_UNARY_FUNC(sgnbit, y[index] = signbit(x[index]));
@@ -401,15 +413,13 @@ void caffe_gpu_rng_uniform<double>(const int n, const double a, const double b,
   }
 }
 
-/*
+// TODO(sgould) there must be a better way to do this
+// TODO(sgould) create test function
 template <>
 void caffe_gpu_rng_uniform<int>(const int n, const int a, const int b, int* r) {
   caffe_gpu_rng_uniform(n, static_cast<const float>(a), static_cast<const float>(b), (float *)r);
-  CUDA_KERNEL_LOOP(index, n) {
-    r[index] = static_cast<int>(((float *)r)[index]);
-  }
+  caffe_gpu_float_to_int(n, (const float *)r, r);
 }
-*/
 
 template <>
 void caffe_gpu_rng_gaussian(const int n, const float mu, const float sigma,
