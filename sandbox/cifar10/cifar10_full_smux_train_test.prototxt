@@ -1,4 +1,4 @@
-name: "CIFAR10_full"
+name: "CIFAR10_full_smux"
 layer {
   name: "cifar"
   type: "Data"
