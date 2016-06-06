@@ -22,6 +22,6 @@ max_iter: 65000
 # snapshot intermediate results
 snapshot: 5000
 snapshot_format: HDF5
-snapshot_prefix: "sandbox/cifar10/${expr}"
+snapshot_prefix: "sandbox/cifar10/${expr}/cifar10_full"
 # solver mode: CPU or GPU
 solver_mode: GPU
