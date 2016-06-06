@@ -264,20 +264,24 @@ create_experiment('baseline', Template(net_tmpl).substitute(modelprefix='baselin
     conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
     conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
 
-# generate rnd2sum model
-create_experiment('rnd2sum', Template(net_tmpl).substitute(modelprefix='rnd2sum',
-    conv1layers=conv1layers(2), mux1layers=mux1layers(RND, 2),
-    conv2layers=conv2layers(2), mux2layers=muxlayers(2, RND, SUM, 2),
-    conv3layers=conv3layers(2), mux3layers=muxlayers(3, RND, SUM, 2)))
+for count in range(2, 5):
+    # generate rnd2sum model
+    expr = 'rnd{}sum'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(count), mux1layers=mux1layers(RND, count),
+        conv2layers=conv2layers(count), mux2layers=muxlayers(2, RND, SUM, count),
+        conv3layers=conv3layers(count), mux3layers=muxlayers(3, RND, SUM, count)))
 
-# generate rnd2rnd model
-create_experiment('rnd2rnd', Template(net_tmpl).substitute(modelprefix='rnd2rnd',
-    conv1layers=conv1layers(2), mux1layers=mux1layers(RND, 2),
-    conv2layers=conv2layers(2), mux2layers=muxlayers(2, RND, RND, 2),
-    conv3layers=conv3layers(2), mux3layers=muxlayers(3, RND, RND, 2)))
+    # generate rnd2rnd model
+    expr = 'rnd{}rnd'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(count), mux1layers=mux1layers(RND, count),
+        conv2layers=conv2layers(count), mux2layers=muxlayers(2, RND, RND, count),
+        conv3layers=conv3layers(count), mux3layers=muxlayers(3, RND, RND, count)))
 
-# generate max2max model
-create_experiment('max2max', Template(net_tmpl).substitute(modelprefix='max2max',
-    conv1layers=conv1layers(2), mux1layers=mux1layers(MAX, 2),
-    conv2layers=conv2layers(2), mux2layers=muxlayers(2, MAX, MAX, 2),
-    conv3layers=conv3layers(2), mux3layers=muxlayers(3, MAX, MAX, 2)))
+    # generate max2max model
+    expr = 'max{}max'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(count), mux1layers=mux1layers(MAX, count),
+        conv2layers=conv2layers(count), mux2layers=muxlayers(2, MAX, MAX, count),
+        conv3layers=conv3layers(count), mux3layers=muxlayers(3, MAX, MAX, count)))
