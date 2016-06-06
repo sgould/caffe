@@ -5,8 +5,7 @@
 Script to generate experiment files from templates.
 """
 
-import os
-import sys
+import os, sys, stat
 import numpy as np
 from string import Template
 
@@ -220,14 +219,21 @@ ${coeff}
 
     return train + test
 
-# read model template
+# read network template
 f = open('cifar10_full_train_test.template', 'r')
-tmpl = f.read()
+net_tmpl = f.read()
 f.close()
 
-# create basic model
+# read training templates
+script_names = ['cifar10_full_solver.prototxt', 'cifar10_full_solver_lr1.prototxt',
+                'cifar10_full_solver_lr2.prototxt', 'train_full.sh']
+script_tmpls = {}
+for name in script_names:
+    with open(name + '.template', 'r') as f:
+        script_tmpls[name] = f.read()
 
-out = Template(tmpl).substitute(modelprefix='test',
+# DEBUG: create basic model
+out = Template(net_tmpl).substitute(modelprefix='test',
     conv1layers=conv1layers(2), mux1layers=mux1layers(3, 2),
     conv2layers=conv2layers(2), mux2layers=muxlayers(2, 3, 1, 2),
     conv3layers=conv3layers(2), mux3layers=muxlayers(3, 3, 1, 2))
@@ -235,13 +241,19 @@ out = Template(tmpl).substitute(modelprefix='test',
 print(out)
 
 # generate baseline model
-if not os.path.exists('baseline'):
-    os.makedirs('baseline')
-    out = Template(tmpl).substitute(modelprefix='baseline',
+expr = 'baseline'
+if not os.path.exists(expr):
+    os.makedirs(expr)
+    net = Template(net_tmpl).substitute(modelprefix=expr,
         conv1layers=conv1layers(0), mux1layers='',
         conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
         conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0))
 
-    with open('baseline/cifar10_full_train_test.prototxt', 'w') as f:
-        f.write(out)
-
+    with open(expr + '/cifar10_full_train_test.prototxt', 'w') as f:
+        f.write(net)
+    for name, tmpl in script_tmpls.iteritems():
+        with open(expr + '/' + name, 'w') as f:
+            f.write(Template(tmpl).substitute(expr=expr))
+    os.chmod(expr + '/train_full.sh', stat.S_IXUSR)
+else:
+    print('WARNING: {} directory already exists'.format(expr))
