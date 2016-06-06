@@ -237,8 +237,7 @@ out = Template(net_tmpl).substitute(modelprefix='test',
     conv1layers=conv1layers(2), mux1layers=mux1layers(3, 2),
     conv2layers=conv2layers(2), mux2layers=muxlayers(2, 3, 1, 2),
     conv3layers=conv3layers(2), mux3layers=muxlayers(3, 3, 1, 2))
-
-print(out)
+#print(out)
 
 # generate baseline model
 expr = 'baseline'
@@ -254,6 +253,26 @@ if not os.path.exists(expr):
     for name, tmpl in script_tmpls.iteritems():
         with open(expr + '/' + name, 'w') as f:
             f.write(Template(tmpl).substitute(expr=expr))
-    os.chmod(expr + '/train_full.sh', stat.S_IXUSR)
+    os.chmod(expr + '/train_full.sh', stat.S_IRWXU)
 else:
     print('WARNING: {} directory already exists'.format(expr))
+
+
+# generate smux2sum model
+expr = 'smux2sum'
+if not os.path.exists(expr):
+    os.makedirs(expr)
+    net = Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(2), mux1layers=mux1layers(3, 2),
+        conv2layers=conv2layers(2), mux2layers=muxlayers(2, 3, 1, 2),
+        conv3layers=conv3layers(2), mux3layers=muxlayers(3, 3, 1, 2))
+
+    with open(expr + '/cifar10_full_train_test.prototxt', 'w') as f:
+        f.write(net)
+    for name, tmpl in script_tmpls.iteritems():
+        with open(expr + '/' + name, 'w') as f:
+            f.write(Template(tmpl).substitute(expr=expr))
+    os.chmod(expr + '/train_full.sh', stat.S_IRWXU)
+else:
+    print('WARNING: {} directory already exists'.format(expr))
+
