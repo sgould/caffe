@@ -9,6 +9,10 @@ import os, sys, stat
 import numpy as np
 from string import Template
 
+SUM = 1
+MAX = 2
+RND = 3
+
 def conv1layers(count = 0):
     """Create a conv1 layers"""
 
@@ -38,7 +42,7 @@ def conv1layers(count = 0):
   }
 }
 """)
-    
+
     if count == 0:
         return tmpl.substitute(id='')
 
@@ -121,7 +125,7 @@ def conv3layers(count):
 def mux1layers(operation, count):
     """
     Create mux1 layers.
-    
+
     :param operation: 3 for rand or 2 for max
     :param count: number of layers to multiplex
     """
@@ -239,40 +243,41 @@ out = Template(net_tmpl).substitute(modelprefix='test',
     conv3layers=conv3layers(2), mux3layers=muxlayers(3, 3, 1, 2))
 #print(out)
 
+def create_experiment(expr, net):
+    """Creates an experiment directory."""
+
+    if not os.path.exists(expr):
+        print('Creating experiment directory {}...'.format(expr))
+        os.makedirs(expr)
+        with open(expr + '/cifar10_full_train_test.prototxt', 'w') as f:
+            f.write(net)
+        for name, tmpl in script_tmpls.iteritems():
+            with open(expr + '/' + name, 'w') as f:
+                f.write(Template(tmpl).substitute(expr=expr))
+        os.chmod(expr + '/train_full.sh', stat.S_IRWXU)
+    else:
+        print('WARNING: {} directory already exists'.format(expr))
+
 # generate baseline model
-expr = 'baseline'
-if not os.path.exists(expr):
-    os.makedirs(expr)
-    net = Template(net_tmpl).substitute(modelprefix=expr,
-        conv1layers=conv1layers(0), mux1layers='',
-        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
-        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0))
+create_experiment('baseline', Template(net_tmpl).substitute(modelprefix='baseline',
+    conv1layers=conv1layers(0), mux1layers='',
+    conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
+    conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
 
-    with open(expr + '/cifar10_full_train_test.prototxt', 'w') as f:
-        f.write(net)
-    for name, tmpl in script_tmpls.iteritems():
-        with open(expr + '/' + name, 'w') as f:
-            f.write(Template(tmpl).substitute(expr=expr))
-    os.chmod(expr + '/train_full.sh', stat.S_IRWXU)
-else:
-    print('WARNING: {} directory already exists'.format(expr))
+# generate rnd2sum model
+create_experiment('rnd2sum', Template(net_tmpl).substitute(modelprefix='rnd2sum',
+    conv1layers=conv1layers(2), mux1layers=mux1layers(RND, 2),
+    conv2layers=conv2layers(2), mux2layers=muxlayers(2, RND, SUM, 2),
+    conv3layers=conv3layers(2), mux3layers=muxlayers(3, RND, SUM, 2)))
 
+# generate rnd2rnd model
+create_experiment('rnd2rnd', Template(net_tmpl).substitute(modelprefix='rnd2rnd',
+    conv1layers=conv1layers(2), mux1layers=mux1layers(RND, 2),
+    conv2layers=conv2layers(2), mux2layers=muxlayers(2, RND, RND, 2),
+    conv3layers=conv3layers(2), mux3layers=muxlayers(3, RND, RND, 2)))
 
-# generate smux2sum model
-expr = 'smux2sum'
-if not os.path.exists(expr):
-    os.makedirs(expr)
-    net = Template(net_tmpl).substitute(modelprefix=expr,
-        conv1layers=conv1layers(2), mux1layers=mux1layers(3, 2),
-        conv2layers=conv2layers(2), mux2layers=muxlayers(2, 3, 1, 2),
-        conv3layers=conv3layers(2), mux3layers=muxlayers(3, 3, 1, 2))
-
-    with open(expr + '/cifar10_full_train_test.prototxt', 'w') as f:
-        f.write(net)
-    for name, tmpl in script_tmpls.iteritems():
-        with open(expr + '/' + name, 'w') as f:
-            f.write(Template(tmpl).substitute(expr=expr))
-    os.chmod(expr + '/train_full.sh', stat.S_IRWXU)
-else:
-    print('WARNING: {} directory already exists'.format(expr))
-
+# generate max2max model
+create_experiment('max2max', Template(net_tmpl).substitute(modelprefix='max2max',
+    conv1layers=conv1layers(2), mux1layers=mux1layers(MAX, 2),
+    conv2layers=conv2layers(2), mux2layers=muxlayers(2, MAX, MAX, 2),
+    conv3layers=conv3layers(2), mux3layers=muxlayers(3, MAX, MAX, 2)))
