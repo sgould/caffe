@@ -10,10 +10,10 @@ import sys
 import numpy as np
 from string import Template
 
-def conv1layer(id):
-    """Create a conv1 layer"""
+def conv1layers(count = 0):
+    """Create a conv1 layers"""
 
-    return Template("""layer {
+    tmpl = Template("""layer {
   name: "conv1${id}"
   type: "Convolution"
   bottom: "data"
@@ -38,12 +38,20 @@ def conv1layer(id):
     }
   }
 }
-""").substitute(id=id)
+""")
+    
+    if count == 0:
+        return tmpl.substitute(id='')
 
-def conv2layer(id):
-    """Create a conv2 layer"""
+    conv = ''
+    for id in range(count):
+        conv += tmpl.substitute(id=chr(ord('a') + id))
+    return conv
 
-    return Template("""layer {
+def conv2layers(count):
+    """Create a conv2 layers."""
+
+    tmpl = Template("""layer {
   name: "conv2${id}"
   type: "Convolution"
   bottom: "norm1"
@@ -68,12 +76,20 @@ def conv2layer(id):
     }
   }
 }
-""").substitute(id=id)
+""")
 
-def conv3layer(id):
-    """Create a conv3 layer."""
+    if count == 0:
+        return tmpl.substitute(id='')
 
-    return Template("""layer {
+    conv = ''
+    for id in range(count):
+        conv += tmpl.substitute(id=chr(ord('a') + id))
+    return conv
+
+def conv3layers(count):
+    """Create a conv3 layers."""
+
+    tmpl = Template("""layer {
   name: "conv3${id}"
   type: "Convolution"
   bottom: "norm2"
@@ -92,11 +108,20 @@ def conv3layer(id):
     }
   }
 }
-""").substitute(id=id)
+""")
 
-def mux1layer(operation, count):
+    if count == 0:
+        return tmpl.substitute(id='')
+
+    conv = ''
+    for id in range(count):
+        conv += tmpl.substitute(id=chr(ord('a') + id))
+    return conv
+
+
+def mux1layers(operation, count):
     """
-    Create a mux1 layer.
+    Create mux1 layers.
     
     :param operation: 3 for rand or 2 for max
     :param count: number of layers to multiplex
@@ -117,27 +142,36 @@ ${bottom}
 }
 """).substitute(op=operation, bottom=bottom)
 
-def muxlayer(layer, trainop, testop, count):
+def muxlayers(level, trainop, testop, count):
     """
-    Create a mux layer.
+    Create mux layers for arbitrary level.
 
-    :param layer: layer number, 1 ...
+    :param level: level number, 1 ...
     :param trainop: 3 for rand, 2 for max, 1 for sum
     :param testop: 3 for rand, 2 for max, 1 for sum
-    :param count: number of layers to multiplex
+    :param count: number of convolutions to multiplex
     """
+
+    if count == 0:
+        return Template("""layer {
+  name: "relu${level}"
+  type: "ReLU"
+  bottom: "conv${level}"
+  top: "conv${level}"
+}
+""").substitute(level=level)
 
     bottom = ''
     for id in range(count):
-        bottom += '  bottom: "conv' + str(layer) + chr(ord('a') + id) + '"\n'
+        bottom += '  bottom: "conv' + str(level) + chr(ord('a') + id) + '"\n'
 
     train = Template("""layer {
-  name: "mux_train${layer}"
+  name: "mux_train${level}"
   include {
     phase: TRAIN
   }
   type: "Eltwise"
-  top: "conv${layer}"
+  top: "conv${level}"
 ${bottom}
   eltwise_param {
     operation: ${trainop}
@@ -145,44 +179,44 @@ ${bottom}
 }
 
 layer {
-  name: "relu${layer}"
+  name: "relu${level}"
   include {
     phase: TRAIN
   }
   type: "ReLU"
-  bottom: "conv${layer}"
-  top: "conv${layer}"
+  bottom: "conv${level}"
+  top: "conv${level}"
 }
-""").substitute(layer=layer, bottom=bottom, trainop=trainop)
+""").substitute(level=level, bottom=bottom, trainop=trainop)
 
     test = ''
     for id in range(count):
         test += Template("""layer {
-  name: "relu${layer}${id}"
+  name: "relu${level}${id}"
   include {
     phase: TEST
   }
   type: "ReLU"
-  bottom: "conv${layer}${id}"
-  top: "conv${layer}${id}"
-}\n""").substitute(layer=layer, id=chr(ord('a') + id))
+  bottom: "conv${level}${id}"
+  top: "conv${level}${id}"
+}\n""").substitute(level=level, id=chr(ord('a') + id))
 
     coeff = ('    coeff: ' + str(1.0 / count) + '\n') * count
     test += Template("""
 layer {
-  name: "mux_test${layer}"
+  name: "mux_test${level}"
   include {
     phase: TEST
   }
   type: "Eltwise"
-  top: "conv${layer}"
+  top: "conv${level}"
 ${bottom}
   eltwise_param {
     operation: ${testop}
 ${coeff}
   }
 }
-""").substitute(layer=layer, bottom=bottom, testop=testop, coeff=coeff)
+""").substitute(level=level, bottom=bottom, testop=testop, coeff=coeff)
 
     return train + test
 
@@ -192,17 +226,22 @@ tmpl = f.read()
 f.close()
 
 # create basic model
-conv1 = ''
-conv2 = ''
-conv3 = ''
-for id in range(2):
-    conv1 += conv1layer(chr(ord('a') + id))
-    conv2 += conv2layer(chr(ord('a') + id))
-    conv3 += conv3layer(chr(ord('a') + id))
 
 out = Template(tmpl).substitute(modelprefix='test',
-    conv1layers=conv1, mux1layers=mux1layer(3, 2),
-    conv2layers=conv2, mux2layers=muxlayer(2, 3, 1, 2),
-    conv3layers=conv3, mux3layers=muxlayer(3, 3, 1, 2))
+    conv1layers=conv1layers(2), mux1layers=mux1layers(3, 2),
+    conv2layers=conv2layers(2), mux2layers=muxlayers(2, 3, 1, 2),
+    conv3layers=conv3layers(2), mux3layers=muxlayers(3, 3, 1, 2))
 
 print(out)
+
+# generate baseline model
+if not os.path.exists('baseline'):
+    os.makedirs('baseline')
+    out = Template(tmpl).substitute(modelprefix='baseline',
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
+        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0))
+
+    with open('baseline/cifar10_full_train_test.prototxt', 'w') as f:
+        f.write(out)
+
