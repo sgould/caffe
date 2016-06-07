@@ -265,23 +265,79 @@ create_experiment('baseline', Template(net_tmpl).substitute(modelprefix='baselin
     conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
 
 for count in range(2, 5):
-    # generate rnd2sum model
+    # generate rnd<n>sum model
     expr = 'rnd{}sum'.format(count)
     create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
         conv1layers=conv1layers(count), mux1layers=mux1layers(RND, count),
         conv2layers=conv2layers(count), mux2layers=muxlayers(2, RND, SUM, count),
         conv3layers=conv3layers(count), mux3layers=muxlayers(3, RND, SUM, count)))
 
-    # generate rnd2rnd model
+    # generate rnd<n>rnd model
     expr = 'rnd{}rnd'.format(count)
     create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
         conv1layers=conv1layers(count), mux1layers=mux1layers(RND, count),
         conv2layers=conv2layers(count), mux2layers=muxlayers(2, RND, RND, count),
         conv3layers=conv3layers(count), mux3layers=muxlayers(3, RND, RND, count)))
 
-    # generate max2max model
+    # generate max<n>max model
     expr = 'max{}max'.format(count)
     create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
         conv1layers=conv1layers(count), mux1layers=mux1layers(MAX, count),
         conv2layers=conv2layers(count), mux2layers=muxlayers(2, MAX, MAX, count),
+        conv3layers=conv3layers(count), mux3layers=muxlayers(3, MAX, MAX, count)))
+
+    # generate rnd<n>rnd1 model
+    expr = 'rnd{}sum1'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(count), mux1layers=mux1layers(RND, count),
+        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
+        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
+
+    # generate max<n>max1 model
+    expr = 'max{}max1'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(count), mux1layers=mux1layers(MAX, count),
+        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
+        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
+
+    # generate rnd<n>sum2 model
+    expr = 'rnd{}sum2'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(count), mux2layers=muxlayers(2, RND, SUM, count),
+        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
+
+    # generate rnd<n>rnd2 model
+    expr = 'rnd{}rnd2'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(count), mux2layers=muxlayers(2, RND, RND, count),
+        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
+
+    # generate max<n>max2 model
+    expr = 'max{}max2'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(count), mux2layers=muxlayers(2, MAX, MAX, count),
+        conv3layers=conv3layers(0), mux3layers=muxlayers(3, 0, 0, 0)))
+
+    # generate rnd<n>sum3 model
+    expr = 'rnd{}sum3'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
+        conv3layers=conv3layers(count), mux3layers=muxlayers(3, RND, SUM, count)))
+
+    # generate rnd<n>rnd3 model
+    expr = 'rnd{}rnd3'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
+        conv3layers=conv3layers(count), mux3layers=muxlayers(3, RND, RND, count)))
+
+    # generate max<n>max3 model
+    expr = 'max{}max3'.format(count)
+    create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
+        conv1layers=conv1layers(0), mux1layers='',
+        conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
         conv3layers=conv3layers(count), mux3layers=muxlayers(3, MAX, MAX, count)))
