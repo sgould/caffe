@@ -287,7 +287,7 @@ for count in range(2, 5):
         conv3layers=conv3layers(count), mux3layers=muxlayers(3, MAX, MAX, count)))
 
     # generate rnd<n>rnd1 model
-    expr = 'rnd{}sum1'.format(count)
+    expr = 'rnd{}rnd1'.format(count)
     create_experiment(expr, Template(net_tmpl).substitute(modelprefix=expr,
         conv1layers=conv1layers(count), mux1layers=mux1layers(RND, count),
         conv2layers=conv2layers(0), mux2layers=muxlayers(2, 0, 0, 0),
